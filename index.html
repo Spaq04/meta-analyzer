@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Meta Analyzer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#F5F4F1;color:#0F0F0F;min-height:100vh}
+.mono{font-family:'DM Mono',monospace}
+.header{background:#0F0F0F;color:white;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:baseline;gap:10px}
+.logo h1{font-family:'Playfair Display',serif;font-size:19px}
+.logo span{font-family:'DM Mono',monospace;font-size:10px;color:#555;letter-spacing:.1em}
+.upload-screen{max-width:720px;margin:0 auto;padding:3rem 1.5rem}
+.upload-screen h2{font-family:'Playfair Display',serif;font-size:32px;margin-bottom:8px}
+.upload-screen>p{color:#6B6B6B;font-size:15px;margin-bottom:2.5rem}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.upload-zone{border:1.5px dashed #C8C5BC;border-radius:12px;padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:white}
+.upload-zone:hover,.upload-zone.over{border-color:#FF4D1C;background:#FFF0EC}
+.upload-zone.done{border-color:#1A7F5A;border-style:solid;background:#E6F5EF}
+.upload-icon{font-size:28px;margin-bottom:8px}
+.upload-label{font-weight:500;font-size:14px;margin-bottom:4px}
+.upload-hint{font-size:12px;color:#6B6B6B}
+.section-label{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.12em;color:#6B6B6B;text-transform:uppercase;margin-bottom:8px}
+.btn{background:#FF4D1C;color:white;border:none;padding:.8rem 2.5rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn:hover{background:#E03D10;transform:translateY(-1px)}
+.btn:disabled{background:#C8C5BC;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;border:1.5px solid #E8E6E0;color:#0F0F0F;padding:.5rem 1rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.btn-ghost:hover{border-color:#0F0F0F}
+.btn-sm{color:white;border:none;padding:.4rem .9rem;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;font-weight:500;transition:opacity .15s}
+.btn-ghost-white{background:transparent;border:1.5px solid #444;color:white;padding:.45rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+.btn-ghost-white:hover{border-color:white}
+.main{max-width:1020px;margin:0 auto;padding:1.5rem}
+.switcher{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.sw-btn{padding:.55rem 1.25rem;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid #E8E6E0;background:white;color:#6B6B6B;transition:all .15s;font-family:'DM Sans',sans-serif}
+.sw-btn.active{background:#0F0F0F;color:white;border-color:#0F0F0F}
+.sw-btn:disabled{opacity:.4;cursor:not-allowed}
+.tabs{display:flex;border-bottom:1px solid #E8E6E0;margin-bottom:1.5rem}
+.tab{padding:.5rem 1.1rem;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:#6B6B6B;font-weight:400;transition:all .15s;white-space:nowrap}
+.tab.active{border-bottom-color:#FF4D1C;color:#0F0F0F;font-weight:500}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.card{background:white;border-radius:12px;padding:1.25rem 1.5rem;border:1px solid #E8E6E0;margin-bottom:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi-card{background:white;border-radius:10px;padding:1rem 1.25rem;border:1px solid #E8E6E0}
+.kpi-label{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.1em;color:#6B6B6B;text-transform:uppercase;margin-bottom:4px}
+.kpi-value{font-size:22px;font-weight:500;font-family:'DM Mono',monospace;color:#0F0F0F}
+.kpi-value.accent{color:#FF4D1C}
+.kpi-value.green{color:#1A7F5A}
+.kpi-sub{font-size:11px;color:#6B6B6B;margin-top:2px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-wrap{position:relative;width:100%;height:180px}
+.ad-row{padding:1rem 0;border-bottom:1px solid #F0EEE9}
+.ad-row:last-child{border-bottom:none}
+.kpi-row{display:flex;gap:18px;flex-wrap:wrap;margin-top:8px}
+.kpi-item-label{font-size:10px;color:#6B6B6B;font-family:'DM Mono',monospace;letter-spacing:.06em}
+.kpi-item-value{font-size:13px;font-weight:500;margin-top:2px}
+.progress{height:3px;background:#F0EEE9;border-radius:2px;margin:8px 0;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.tag{display:inline-block;font-size:11px;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:4px;font-weight:500}
+.tag-active{background:#E6F5EF;color:#1A7F5A}
+.tag-inactive{background:#F5F4F1;color:#6B6B6B}
+.tag-best{background:#FFF0EC;color:#FF4D1C}
+.tag-ig{background:#E6F1FB;color:#0C447C}
+.tag-fb{background:#EEEDFE;color:#3C3489}
+.tag-high{background:#E6F5EF;color:#1A7F5A}
+.tag-mid{background:#FEF3DC;color:#C47A0A}
+.tag-low{background:#FCEBEB;color:#A32D2D}
+.lead-card{background:white;border:1px solid #E8E6E0;border-radius:10px;padding:1rem 1.25rem;margin-bottom:10px;border-left:3px solid #E8E6E0}
+.lead-card.high{border-left-color:#1A7F5A}
+.lead-card.mid{border-left-color:#C47A0A}
+.lead-card.low{border-left-color:#E83B3B}
+.lead-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.lead-name{font-weight:500;font-size:15px}
+.lead-fields{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.lead-field-label{font-size:11px;color:#6B6B6B;margin-bottom:1px}
+.lead-field-value{font-weight:500;font-size:13px}
+.score-bar{display:flex;gap:3px;align-items:center}
+.score-dot{width:7px;height:7px;border-radius:50%;background:#E8E6E0;flex-shrink:0}
+.score-dot.filled-high{background:#1A7F5A}
+.score-dot.filled-mid{background:#C47A0A}
+.score-dot.filled-low{background:#E83B3B}
+.qual-dist{display:flex;gap:12px;margin-bottom:16px}
+.qual-box{flex:1;border-radius:10px;padding:.9rem 1rem;text-align:center;border:1px solid #E8E6E0;background:white}
+.qual-box-num{font-size:26px;font-weight:500;font-family:'DM Mono',monospace}
+.plat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.plat-bar-wrap{flex:1;height:5px;background:#F0EEE9;border-radius:3px;overflow:hidden}
+.plat-bar-fill{height:100%;border-radius:3px}
+.ai-bubble{background:white;border:1px solid #E8E6E0;border-radius:12px;border-top-left-radius:2px;padding:1.2rem 1.4rem;font-size:14px;line-height:1.75;color:#1A1A1A;white-space:pre-wrap}
+.spinner{width:18px;height:18px;border:2px solid #E8E6E0;border-top-color:#FF4D1C;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fade-in{animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.empty{text-align:center;padding:3rem 1rem;color:#6B6B6B;font-size:14px}
+@media(max-width:620px){.kpi-grid{grid-template-columns:1fr 1fr}.charts-grid{grid-template-columns:1fr}.upload-grid{grid-template-columns:1fr}.qual-dist{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><h1>Meta Analyzer</h1><span>BY REALMAPS</span></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn-ghost-white" id="resetBtn" style="display:none" onclick="resetApp()">↺ Nuova analisi</button>
+
+  </div>
+</div>
+
+<!-- UPLOAD -->
+<div class="upload-screen" id="uploadScreen">
+  <h2>Analizza le tue campagne Meta</h2>
+  <p>Carica uno o entrambi i file esportati da Meta Ads Manager.</p>
+  <div class="upload-grid">
+    <div>
+      <div class="section-label" style="margin-bottom:8px">Inserzioni (XLS)</div>
+      <div class="upload-zone" id="zoneAds" onclick="document.getElementById('inputAds').click()"
+        ondragover="onDragOver(event,'zoneAds')" ondragleave="onDragLeave('zoneAds')" ondrop="onDrop(event,'ads')">
+        <input type="file" id="inputAds" accept=".xls,.xlsx,.xml" style="display:none" onchange="loadFile(this,'ads')">
+        <div class="upload-icon" id="iconAds">📊</div>
+        <div class="upload-label" id="labelAds">Carica XLS inserzioni</div>
+        <div class="upload-hint">Ads Manager → Inserzioni → Esporta</div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label" style="margin-bottom:8px">Lead (CSV)</div>
+      <div class="upload-zone" id="zoneLeads" onclick="document.getElementById('inputLeads').click()"
+        ondragover="onDragOver(event,'zoneLeads')" ondragleave="onDragLeave('zoneLeads')" ondrop="onDrop(event,'leads')">
+        <input type="file" id="inputLeads" accept=".csv,.tsv" style="display:none" onchange="loadFile(this,'leads')">
+        <div class="upload-icon" id="iconLeads">👥</div>
+        <div class="upload-label" id="labelLeads">Carica CSV lead</div>
+        <div class="upload-hint">Ads Manager → Lead Ads → Esporta</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+    <button class="btn" id="analyzeBtn" disabled onclick="analyze()" style="font-size:15px;padding:.85rem 3rem">Analizza →</button>
+    <p style="font-size:12px;color:#6B6B6B">Puoi caricare anche un solo file</p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="main fade-in" id="dashboardScreen" style="display:none">
+  <div class="switcher">
+    <button class="sw-btn active" id="swAds"   onclick="switchSection('ads')">📊 Inserzioni</button>
+    <button class="sw-btn"        id="swLeads" onclick="switchSection('leads')">👥 Qualità Lead</button>
+  </div>
+
+  <!-- ═══ SEZIONE INSERZIONI ═══ -->
+  <div id="sectionAds">
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('ads','overview',this)">Panoramica</div>
+      <div class="tab"        onclick="showTab('ads','detail',this)">Inserzioni</div>
+      <div class="tab"        onclick="showTab('ads','aiads',this)">Consigli AI</div>
+    </div>
+    <div class="tab-content active" id="ads-overview">
+      <div class="kpi-grid" id="adsKpiGrid"></div>
+      <div class="charts-grid">
+        <div class="card" style="margin-bottom:0"><div class="section-label">Spesa vs lead per inserzione</div><div class="chart-wrap"><canvas id="chartSpesa"></canvas></div></div>
+        <div class="card" style="margin-bottom:0"><div class="section-label">CPL per inserzione</div><div class="chart-wrap"><canvas id="chartCPL"></canvas></div></div>
+      </div>
+    </div>
+    <div class="tab-content" id="ads-detail"><div class="card" id="adsList"></div></div>
+    <div class="tab-content" id="ads-aiads">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:30px;height:30px;background:#0F0F0F;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;flex-shrink:0">✦</div>
+          <div><div style="font-weight:500;font-size:14px">Analisi inserzioni</div><div style="font-size:11px;color:#6B6B6B">Ottimizzazione budget e performance</div></div>
+        </div>
+        <div id="aiAdsContent"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn-ghost" id="regenAdsBtn" onclick="runAIAds()" style="display:none">↺ Rigenera</button></div>
+    </div>
+  </div>
+
+  <!-- ═══ SEZIONE LEAD ═══ -->
+  <div id="sectionLeads" style="display:none">
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('leads','overview',this)">Panoramica</div>
+      <div class="tab"        onclick="showTab('leads','cards',this)">Schede lead</div>
+      <div class="tab"        onclick="showTab('leads','aileads',this)">Consigli AI</div>
+    </div>
+
+    <!-- LEAD OVERVIEW -->
+    <div class="tab-content active" id="leads-overview">
+      <div class="kpi-grid" id="leadsKpiGrid"></div>
+      <div class="qual-dist" id="qualDist"></div>
+      <div class="charts-grid">
+        <div class="card" style="margin-bottom:0"><div class="section-label">Lead per giorno</div><div class="chart-wrap"><canvas id="chartGiorni"></canvas></div></div>
+        <div class="card" style="margin-bottom:0"><div class="section-label">Piattaforma</div><div id="platformDetail" style="padding-top:4px"></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="section-label">Orario di arrivo lead</div><div class="chart-wrap" style="height:130px"><canvas id="chartOre"></canvas></div></div>
+      <div class="card"><div class="section-label">Città principali</div><div id="cityBreakdown"></div></div>
+    </div>
+
+    <!-- SCHEDE LEAD -->
+    <div class="tab-content" id="leads-cards">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:12px;color:#6B6B6B">Filtra:</span>
+        <button class="btn-sm" id="fAll"  onclick="filterLeads('all')"  style="background:#0F0F0F">Tutti</button>
+        <button class="btn-sm" id="fHigh" onclick="filterLeads('high')" style="background:#1A7F5A">● Alto</button>
+        <button class="btn-sm" id="fMid"  onclick="filterLeads('mid')"  style="background:#C47A0A">● Medio</button>
+        <button class="btn-sm" id="fLow"  onclick="filterLeads('low')"  style="background:#A32D2D">● Basso</button>
+      </div>
+      <div id="leadCards"></div>
+    </div>
+
+    <!-- AI LEADS -->
+    <div class="tab-content" id="leads-aileads">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:30px;height:30px;background:#0F0F0F;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;flex-shrink:0">✦</div>
+          <div><div style="font-weight:500;font-size:14px">Analisi qualità lead</div><div style="font-size:11px;color:#6B6B6B">Profilo, conversione e ottimizzazione form</div></div>
+        </div>
+        <div id="aiLeadsContent"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn-ghost" id="regenLeadsBtn" onclick="runAILeads()" style="display:none">↺ Rigenera</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+var leadsRaw=null,adsRaw=null,leadsData=[],adsData=[],scoredLeads=[],charts={};
+
+// FILE
+function onDragOver(e,id){e.preventDefault();document.getElementById(id).classList.add('over')}
+function onDragLeave(id){document.getElementById(id).classList.remove('over')}
+function onDrop(e,type){e.preventDefault();onDragLeave('zone'+(type==='leads'?'Leads':'Ads'));if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0],type)}
+function loadFile(inp,type){if(inp.files[0])readFile(inp.files[0],type)}
+function readFile(file,type){
+  var fr=new FileReader();
+  fr.onload=function(e){
+    var text=e.target.result;
+    if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+    if(type==='leads'){leadsRaw=text;markDone('zoneLeads','iconLeads','labelLeads',file.name)}
+    else{adsRaw=text;markDone('zoneAds','iconAds','labelAds',file.name)}
+    document.getElementById('analyzeBtn').disabled=(!leadsRaw&&!adsRaw);
+  };
+  fr.readAsText(file,'utf-8');
+}
+function markDone(zone,icon,label,name){
+  document.getElementById(zone).classList.add('done');
+  document.getElementById(icon).textContent='✓';
+  document.getElementById(label).textContent=name;
+}
+
+// PARSERS
+function parseLeads(text){
+  var lines=text.trim().split('\n').filter(function(l){return l.trim()});
+  var sep=lines[0].includes('\t')?'\t':',';
+  var headers=lines[0].split(sep).map(function(h){return h.trim().replace(/^"|"$/g,'')});
+  return lines.slice(1).map(function(line){
+    var vals=line.split(sep).map(function(v){return v.trim().replace(/^"|"$/g,'')});
+    var row={};headers.forEach(function(h,i){row[h]=vals[i]||''});return row;
+  }).filter(function(r){return r['id']||r['nome']||r['created_time']});
+}
+function parseAds(text){
+  var doc=new DOMParser().parseFromString(text,'application/xml');
+  var rows=doc.querySelectorAll('Row');
+  var headers=[],data=[];
+  rows.forEach(function(row,i){
+    var cells=Array.from(row.querySelectorAll('Cell')).map(function(c){var d=c.querySelector('Data');return d?d.textContent.trim():''});
+    if(i===0)headers.push.apply(headers,cells);
+    else{var obj={};headers.forEach(function(h,idx){obj[h]=cells[idx]||null});data.push(obj)}
+  });
+  return data;
+}
+
+// SCORING
+function scoreLead(l){
+  var score=0;
+  var budget=(l['budget']||'').toLowerCase().trim();
+  var team=(l['quanto_\u00e8_grande_il_tuo_team']||l['quanto_e_grande_il_tuo_team']||'').toLowerCase().trim();
+  var budgetNum=parseFloat(budget.replace(/[^\d.]/g,''));
+  if(!isNaN(budgetNum)){
+    if(budgetNum>=500000)score+=4;
+    else if(budgetNum>=10000)score+=3;
+    else if(budgetNum>=1000)score+=2;
+    else if(budgetNum>=200)score+=1;
+  } else {
+    var noIdea=['non so','non saprei','dipende','de che','cerco casa','nessun'].some(function(w){return budget.includes(w)});
+    if(!noIdea&&budget.length>1)score+=1;
+  }
+  var teamNum=parseInt(team.replace(/[^\d]/g,''));
+  if(!isNaN(teamNum)&&teamNum>0){
+    if(teamNum>=10)score+=3;
+    else if(teamNum>=3)score+=2;
+    else score+=1;
+  } else {
+    var small=['colleghi','persone','siamo','team'].some(function(w){return team.includes(w)});
+    if(small)score+=2;
+    else if(team.length>1)score+=1;
+  }
+  if((l['platform']||'').toLowerCase()==='fb')score+=1;
+  var quality=score>=5?'high':score>=3?'mid':'low';
+  var label=score>=5?'Alto':score>=3?'Medio':'Basso';
+  return Object.assign({},l,{_score:score,_quality:quality,_qualityLabel:label});
+}
+
+// HELPERS
+function fmtEur(n){return(isNaN(+n)||n==null)?'—':'€ '+(+n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtN(n){return(isNaN(+n)||n==null)?'—':(+n).toLocaleString('it-IT',{maximumFractionDigits:0})}
+function fmtPct(n){return(isNaN(+n)||n==null)?'—':(+n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'%'}
+function dc(k){if(charts[k]){charts[k].destroy();delete charts[k]}}
+
+function showTab(section,name,el){
+  var sec=document.getElementById('section'+(section==='ads'?'Ads':'Leads'));
+  sec.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active')});
+  sec.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+  document.getElementById(section===('ads'?'ads':'leads')+'-'+name).classList.add('active');
+  el.classList.add('active');
+  // fix: use full id
+  var prefix=section==='ads'?'ads':'leads';
+  document.getElementById(prefix+'-'+name).classList.add('active');
+}
+
+function switchSection(s){
+  document.getElementById('sectionAds').style.display=s==='ads'?'':'none';
+  document.getElementById('sectionLeads').style.display=s==='leads'?'':'none';
+  document.getElementById('swAds').classList.toggle('active',s==='ads');
+  document.getElementById('swLeads').classList.toggle('active',s==='leads');
+}
+
+function resetApp(){
+  leadsRaw=adsRaw=null;leadsData=[];adsData=[];scoredLeads=[];
+  ['zoneLeads','zoneAds'].forEach(function(z){document.getElementById(z).classList.remove('done')});
+  var iL=document.getElementById('inputLeads');if(iL)iL.value='';
+  var iA=document.getElementById('inputAds');if(iA)iA.value='';
+  document.getElementById('iconLeads').textContent='👥';
+  document.getElementById('iconAds').textContent='📊';
+  document.getElementById('labelLeads').textContent='Carica CSV lead';
+  document.getElementById('labelAds').textContent='Carica XLS inserzioni';
+  document.getElementById('analyzeBtn').disabled=true;
+  document.getElementById('uploadScreen').style.display='';
+  document.getElementById('dashboardScreen').style.display='none';
+  document.getElementById('resetBtn').style.display='none';
+  Object.keys(charts).forEach(function(k){charts[k].destroy();delete charts[k]});
+}
+
+// ANALYZE
+function analyze(){
+  adsData=adsRaw?parseAds(adsRaw):[];
+  leadsData=leadsRaw?parseLeads(leadsRaw):[];
+  scoredLeads=leadsData.map(scoreLead);
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('dashboardScreen').style.display='';
+  document.getElementById('resetBtn').style.display='';
+  document.getElementById('swAds').disabled=adsData.length===0;
+  document.getElementById('swLeads').disabled=leadsData.length===0;
+  if(adsData.length>0){buildAdsKPIs();buildAdsCharts();buildAdsList();runAIAds();switchSection('ads')}
+  else switchSection('leads');
+  if(leadsData.length>0){buildLeadsKPIs();buildLeadsCharts();buildLeadsOverview();renderLeadCards('all');runAILeads()}
+}
+
+// ═══ INSERZIONI ═══
+function buildAdsKPIs(){
+  var ts=adsData.reduce(function(s,a){return s+(+a['Importo speso (EUR)']||0)},0);
+  var ti=adsData.reduce(function(s,a){return s+(+a['Impression']||0)},0);
+  var tc=adsData.reduce(function(s,a){return s+(+a['Copertura']||0)},0);
+  var tl=adsData.reduce(function(s,a){return s+(+a['Risultati']||0)},0);
+  var cpl=tl>0?ts/tl:0;
+  var act=adsData.filter(function(a){return a["Pubblicazione dell'inserzione"]==='active'}).length;
+  document.getElementById('adsKpiGrid').innerHTML=[
+    {l:'Spesa totale',v:fmtEur(ts),s:act+' inserzioni attive'},
+    {l:'Lead (Meta)',v:fmtN(tl),s:'attribuzione Meta',c:'accent'},
+    {l:'CPL (Meta)',v:fmtEur(cpl),s:'spesa \u00f7 lead'},
+    {l:'Impression',v:fmtN(ti),s:'copertura '+fmtN(tc)},
+  ].map(function(k){return '<div class="kpi-card"><div class="kpi-label">'+k.l+'</div><div class="kpi-value'+(k.c?' '+k.c:'')+'">'+k.v+'</div><div class="kpi-sub">'+k.s+'</div></div>'}).join('');
+}
+
+function buildAdsCharts(){
+  var active=adsData.filter(function(a){return(+a['Importo speso (EUR)']||0)>0});
+  var names=active.map(function(a){var n=a["Nome dell'inserzione"]||'';return n.length>20?n.slice(0,20)+'\u2026':n});
+  dc('spesa');dc('cpl');
+  charts.spesa=new Chart(document.getElementById('chartSpesa'),{type:'bar',data:{labels:names,datasets:[
+    {label:'Spesa (\u20ac)',data:active.map(function(a){return+(a['Importo speso (EUR)']||0)}),backgroundColor:'#0F0F0F',borderRadius:4,yAxisID:'y'},
+    {label:'Lead Meta',data:active.map(function(a){return+(a['Risultati']||0)}),backgroundColor:'#FF4D1C',borderRadius:4,yAxisID:'y2'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:10,boxHeight:10,font:{size:11},color:'#6B6B6B',padding:10}}},scales:{
+    y:{beginAtZero:true,position:'left',ticks:{color:'#888',font:{size:10},callback:function(v){return'\u20ac'+v}},grid:{color:'rgba(0,0,0,0.04)'},border:{display:false}},
+    y2:{beginAtZero:true,position:'right',ticks:{color:'#FF4D1C',font:{size:10},stepSize:1},grid:{display:false},border:{display:false}},
+    x:{ticks:{color:'#888',font:{size:10},maxRotation:35},grid:{display:false},border:{display:false}}
+  }}});
+  var cplData=active.map(function(a){var s=+(a['Importo speso (EUR)']||0),l=+(a['Risultati']||0);return l>0?+(s/l).toFixed(2):0});
+  var minCPL=Math.min.apply(null,cplData.filter(function(x){return x>0}));
+  charts.cpl=new Chart(document.getElementById('chartCPL'),{type:'bar',data:{labels:names,datasets:[{label:'CPL \u20ac',data:cplData,backgroundColor:cplData.map(function(v){return v===0?'#E8E6E0':v===minCPL?'#1A7F5A':'#FF4D1C'}),borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+    y:{beginAtZero:true,ticks:{color:'#888',font:{size:10},callback:function(v){return'\u20ac'+v}},grid:{color:'rgba(0,0,0,0.04)'},border:{display:false}},
+    x:{ticks:{color:'#888',font:{size:10},maxRotation:35},grid:{display:false},border:{display:false}}
+  }}});
+}
+
+function buildAdsList(){
+  var active=adsData.filter(function(a){return(+a['Importo speso (EUR)']||0)>0}).sort(function(a,b){return(+b['Importo speso (EUR)']||0)-(+a['Importo speso (EUR)']||0)});
+  var maxS=Math.max.apply(null,active.map(function(a){return+(a['Importo speso (EUR)']||0)}).concat([1]));
+  var bestName=null,bestCPL=Infinity;
+  active.forEach(function(a){var s=+(a['Importo speso (EUR)']||0),l=+(a['Risultati']||0);if(l>0&&s/l<bestCPL){bestCPL=s/l;bestName=a["Nome dell'inserzione"]}});
+  var inactive=adsData.filter(function(a){return(+a['Importo speso (EUR)']||0)===0});
+  var html='<div class="section-label">'+active.length+' inserzioni con spesa</div>';
+  active.forEach(function(a){
+    var name=a["Nome dell'inserzione"]||'';
+    var isAct=a["Pubblicazione dell'inserzione"]==='active';
+    var spent=+(a['Importo speso (EUR)']||0);
+    var leads=+(a['Risultati']||0);
+    var cpl=leads>0?spent/leads:null;
+    var isBest=name===bestName;
+    var kpis=[
+      ['Lead',''+leads],
+      ['CPL',cpl!=null?fmtEur(cpl):'—'],
+      ['CTR',(+(a['CTR (tasso di clic sul link)']||0))>0?fmtPct(+(a['CTR (tasso di clic sul link)']||0)):'—'],
+      ['CPC',(+(a['CPC (costo per clic sul link) (EUR)']||0))>0?fmtEur(+(a['CPC (costo per clic sul link) (EUR)']||0)):'—'],
+      ['CPM',(+(a['CPM (costo per 1000 impression) (EUR)']||0))>0?fmtEur(+(a['CPM (costo per 1000 impression) (EUR)']||0)):'—'],
+      ['Freq.',(+(a['Frequenza']||0))>0?(+(a['Frequenza']||0)).toFixed(2)+'\u00d7':'—'],
+      ['Clic link',fmtN(+(a['Clic sul link']||0))],
+      ['Impression',fmtN(+(a['Impression']||0))],
+      ['Copertura',fmtN(+(a['Copertura']||0))],
+      ['Qualit\u00e0',a['Valutazione della qualit\u00e0']||'—'],
+    ];
+    html+='<div class="ad-row"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px"><div>'
+      +(isBest?'<div style="margin-bottom:5px"><span class="tag tag-best">\u2605 Miglior CPL</span></div>':'')
+      +'<div style="font-weight:500;font-size:14px;margin-bottom:5px">'+name+'</div>'
+      +'<span class="tag '+(isAct?'tag-active':'tag-inactive')+'">'+(isAct?'attiva':'inattiva')+'</span>'
+      +'<span class="mono" style="font-size:11px;color:#6B6B6B;margin-left:8px">Budget: '+(a['Budget del gruppo di inserzioni']||'—')+'</span>'
+      +'</div><span class="mono" style="font-size:18px;font-weight:500">'+fmtEur(spent)+'</span></div>'
+      +'<div class="progress"><div class="progress-fill" style="width:'+Math.round(spent/maxS*100)+'%;background:'+(isBest?'#1A7F5A':'#FF4D1C')+'"></div></div>'
+      +'<div class="kpi-row">'+kpis.map(function(k){return'<div><div class="kpi-item-label">'+k[0]+'</div><div class="kpi-item-value">'+k[1]+'</div></div>'}).join('')+'</div></div>';
+  });
+  if(inactive.length>0)html+='<div style="background:#F5F4F1;border-radius:8px;padding:.7rem 1rem;margin-top:10px"><div class="section-label" style="margin-bottom:4px">Inattive / senza spesa</div><div style="font-size:13px;color:#6B6B6B">'+inactive.map(function(a){return a["Nome dell'inserzione"]}).join(' \u00b7 ')+'</div></div>';
+  document.getElementById('adsList').innerHTML=html;
+}
+
+// ═══ LEAD ═══
+function buildLeadsKPIs(){
+  var total=scoredLeads.length;
+  var high=scoredLeads.filter(function(l){return l._quality==='high'}).length;
+  var mid=scoredLeads.filter(function(l){return l._quality==='mid'}).length;
+  var low=scoredLeads.filter(function(l){return l._quality==='low'}).length;
+  var ig=scoredLeads.filter(function(l){return(l['platform']||'').toLowerCase()==='ig'}).length;
+  var fb=scoredLeads.filter(function(l){return(l['platform']||'').toLowerCase()==='fb'}).length;
+  document.getElementById('leadsKpiGrid').innerHTML=[
+    {l:'Lead totali',v:''+total,s:ig+' Instagram \u00b7 '+fb+' Facebook'},
+    {l:'Qualit\u00e0 alta',v:''+high,s:total>0?Math.round(high/total*100)+'% del totale':'',c:'green'},
+    {l:'Qualit\u00e0 media',v:''+mid,s:total>0?Math.round(mid/total*100)+'% del totale':''},
+    {l:'Qualit\u00e0 bassa',v:''+low,s:total>0?Math.round(low/total*100)+'% del totale':''},
+  ].map(function(k){return'<div class="kpi-card"><div class="kpi-label">'+k.l+'</div><div class="kpi-value'+(k.c?' '+k.c:'')+'">'+k.v+'</div><div class="kpi-sub">'+k.s+'</div></div>'}).join('');
+
+  var t2=scoredLeads.length||1;
+  document.getElementById('qualDist').innerHTML=[
+    {q:'high',label:'Alto',color:'#1A7F5A',n:high},
+    {q:'mid',label:'Medio',color:'#C47A0A',n:mid},
+    {q:'low',label:'Basso',color:'#A32D2D',n:low},
+  ].map(function(x){return'<div class="qual-box" style="border-color:'+x.color+'33"><div class="qual-box-num" style="color:'+x.color+'">'+x.n+'</div><div style="font-size:11px;font-weight:500;color:'+x.color+';margin:2px 0">'+x.label+'</div><div style="font-size:12px;color:#6B6B6B">'+Math.round(x.n/t2*100)+'% dei lead</div></div>'}).join('');
+}
+
+function buildLeadsCharts(){
+  var dayMap={};
+  scoredLeads.forEach(function(l){var d=(l['created_time']||'').slice(5,10);if(d)dayMap[d]=(dayMap[d]||0)+1});
+  var days=Object.entries(dayMap).sort();
+  dc('giorni');
+  charts.giorni=new Chart(document.getElementById('chartGiorni'),{type:'bar',data:{labels:days.map(function(d){return d[0]}),datasets:[{data:days.map(function(d){return d[1]}),backgroundColor:'#FF4D1C',borderRadius:4,label:'Lead'}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#888',font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'},border:{display:false}},x:{ticks:{color:'#888',font:{size:11}},grid:{display:false},border:{display:false}}}}});
+
+  var hourMap=new Array(24).fill(0);
+  scoredLeads.forEach(function(l){var m=(l['created_time']||'').match(/T(\d{2}):/);if(m)hourMap[parseInt(m[1])]++});
+  dc('ore');
+  charts.ore=new Chart(document.getElementById('chartOre'),{type:'bar',data:{labels:Array.from({length:24},function(_,i){return i+'h'}),datasets:[{data:hourMap,backgroundColor:hourMap.map(function(_,i){return(i>=8&&i<=20)?'#0F0F0F':'#E8E6E0'}),borderRadius:2,label:'Lead'}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.y+' lead'}}}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,color:'#888',font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'},border:{display:false}},x:{ticks:{color:'#888',font:{size:10},maxTicksLimit:12},grid:{display:false},border:{display:false}}}}});
+}
+
+function buildLeadsOverview(){
+  var platMap={};
+  scoredLeads.forEach(function(l){var p=(l['platform']||'altro').toUpperCase();platMap[p]=(platMap[p]||0)+1});
+  var total=scoredLeads.length||1;
+  var colors={IG:'#378ADD',FB:'#7F77DD'};
+  document.getElementById('platformDetail').innerHTML=Object.entries(platMap).map(function(e){var p=e[0],c=e[1];return'<div class="plat-row"><span class="tag tag-'+p.toLowerCase()+'" style="width:36px;text-align:center;flex-shrink:0">'+p+'</span><span class="mono" style="font-weight:500;font-size:15px;width:28px;text-align:right;flex-shrink:0">'+c+'</span><div class="plat-bar-wrap"><div class="plat-bar-fill" style="width:'+Math.round(c/total*100)+'%;background:'+(colors[p]||'#888')+'"></div></div><span style="font-size:12px;color:#6B6B6B;width:36px;flex-shrink:0">'+Math.round(c/total*100)+'%</span></div>'}).join('');
+
+  var cityMap={};
+  scoredLeads.forEach(function(l){var c=(l['\u00e0']||l['citt\u00e0']||l['citta']||'').trim();if(c)cityMap[c]=(cityMap[c]||0)+1});
+  // try all possible field names
+  var cityMap2={};
+  scoredLeads.forEach(function(l){
+    var c='';
+    Object.keys(l).forEach(function(k){if(k.toLowerCase().includes('citt'))c=l[k]||''});
+    c=c.trim();if(c)cityMap2[c]=(cityMap2[c]||0)+1;
+  });
+  var finalCity=Object.keys(cityMap2).length>0?cityMap2:cityMap;
+  var maxC=Math.max.apply(null,Object.values(finalCity).concat([1]));
+  document.getElementById('cityBreakdown').innerHTML=Object.entries(finalCity).sort(function(a,b){return b[1]-a[1]}).slice(0,10)
+    .map(function(e){return'<div class="plat-row"><span style="font-size:13px;font-weight:500;min-width:130px">'+e[0]+'</span><div class="plat-bar-wrap"><div class="plat-bar-fill" style="width:'+Math.round(e[1]/maxC*100)+'%;background:#0F0F0F"></div></div><span class="mono" style="font-size:13px;width:24px;text-align:right">'+e[1]+'</span></div>'}).join('')
+    ||'<p style="color:#6B6B6B;font-size:13px">Nessun dato citt\u00e0.</p>';
+}
+
+function filterLeads(q){
+  ['all','high','mid','low'].forEach(function(f){var b=document.getElementById('f'+f.charAt(0).toUpperCase()+f.slice(1));if(b)b.style.opacity=f===q?'1':'0.5'});
+  renderLeadCards(q);
+}
+
+function renderLeadCards(filter){
+  var list=filter==='all'?scoredLeads:scoredLeads.filter(function(l){return l._quality===filter});
+  if(!list.length){document.getElementById('leadCards').innerHTML='<div class="empty"><div style="font-size:36px;margin-bottom:12px;opacity:.4">🔍</div>Nessun lead trovato.</div>';return}
+  document.getElementById('leadCards').innerHTML=list.map(function(l){
+    var nome=((l['nome']||'')+' '+(l['cognome']||'')).trim();
+    var plat=(l['platform']||'').toLowerCase();
+    var citta='';Object.keys(l).forEach(function(k){if(k.toLowerCase().includes('citt'))citta=l[k]||''});citta=citta||'—';
+    var budget=l['budget']||'—';
+    var team=l['quanto_\u00e8_grande_il_tuo_team']||l['quanto_e_grande_il_tuo_team']||'—';
+    var dt=(l['created_time']||'').slice(0,10);
+    var ora=(l['created_time']||'').slice(11,16);
+    var adName=l['ad_name']||'—';
+    var score=l._score,q=l._quality,qLabel=l._qualityLabel;
+    var dots=Array.from({length:8},function(_,i){return'<div class="score-dot'+(i<score?' filled-'+q:'')+'"></div>'}).join('');
+    return'<div class="lead-card '+q+'">'
+      +'<div class="lead-card-header"><div>'
+      +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:5px"><span class="lead-name">'+(nome||'Lead anonimo')+'</span><span class="tag tag-'+plat+'">'+plat.toUpperCase()+'</span></div>'
+      +'<div style="display:flex;gap:6px;align-items:center"><span class="tag tag-'+q+'">'+qLabel+'</span><div class="score-bar">'+dots+'</div><span style="font-size:11px;color:#6B6B6B;font-family:DM Mono,monospace">'+score+'/8</span></div>'
+      +'</div><div style="text-align:right;flex-shrink:0"><div class="mono" style="font-size:11px;color:#6B6B6B">'+dt+'</div><div class="mono" style="font-size:13px;font-weight:500">'+ora+'</div></div></div>'
+      +'<div class="lead-fields">'
+      +'<div><div class="lead-field-label">Citt\u00e0</div><div class="lead-field-value">'+citta+'</div></div>'
+      +'<div><div class="lead-field-label">Budget dichiarato</div><div class="lead-field-value">'+budget+'</div></div>'
+      +'<div><div class="lead-field-label">Dimensione team</div><div class="lead-field-value">'+team+'</div></div>'
+      +'<div><div class="lead-field-label">Inserzione</div><div class="lead-field-value" style="font-size:12px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+adName+'">'+adName+'</div></div>'
+      +'</div></div>';
+  }).join('');
+}
+
+// ═══ AI ═══
+async function callAI(userPrompt,systemPrompt,contentId,regenId){
+  document.getElementById(contentId).innerHTML='<div style="color:#6B6B6B;font-size:14px;padding:.5rem 0"><span class="spinner"></span>Analisi in corso...</div>';
+  document.getElementById(regenId).style.display='none';
+  try{
+    var res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:systemPrompt,messages:[{role:'user',content:userPrompt}]})});
+    var data=await res.json();
+    var text=data.content&&data.content.find(function(c){return c.type==='text'});
+    document.getElementById(contentId).innerHTML='<div class="ai-bubble fade-in">'+(text?text.text:'Analisi non disponibile.')+'</div>';
+  }catch(e){
+    document.getElementById(contentId).innerHTML='<div class="ai-bubble" style="color:#A32D2D">Errore connessione AI.</div>';
+  }
+  document.getElementById(regenId).style.display='';
+}
+
+async function runAIAds(){
+  var active=adsData.filter(function(a){return(+a['Importo speso (EUR)']||0)>0});
+  var total=adsData.reduce(function(s,a){return s+(+a['Importo speso (EUR)']||0)},0);
+  var inactive=adsData.filter(function(a){return(+a['Importo speso (EUR)']||0)===0}).map(function(a){return a["Nome dell'inserzione"]}).join(', ');
+  var summary=active.map(function(a){
+    var s=+(a['Importo speso (EUR)']||0),l=+(a['Risultati']||0);
+    return'- "'+a["Nome dell'inserzione"]+'": speso \u20ac'+s.toFixed(2)+', lead: '+l+', CPL: '+(l>0?'\u20ac'+(s/l).toFixed(2):'n/d')+', CTR: '+(a['CTR (tasso di clic sul link)']||'—')+'%, CPM: \u20ac'+(+(a['CPM (costo per 1000 impression) (EUR)']||0)).toFixed(2)+', freq: '+(+(a['Frequenza']||0)).toFixed(2)+'x, qualit\u00e0: '+(a['Valutazione della qualit\u00e0']||'—');
+  }).join('\n');
+  await callAI(
+    'Dati inserzioni Meta Ads:\n\nINSERZIONI ATTIVE:\n'+(summary||'Nessuna')+'\n\nSPESA TOTALE: \u20ac'+total.toFixed(2)+'\nINATTIVE/ZERO: '+(inactive||'nessuna'),
+    'Sei un esperto Meta Ads. Analizza le inserzioni in italiano con questa struttura esatta:\n\nCOSA FUNZIONA\n(2-3 punti con dati numerici)\n\nCOSA OTTIMIZZARE\n(2-3 punti con dati numerici)\n\n3 AZIONI CONCRETE QUESTA SETTIMANA\n1. ...\n2. ...\n3. ...\n\nDiretto, pratico, numeri reali. Niente asterischi o hashtag. Intestazioni in maiuscolo.',
+    'aiAdsContent','regenAdsBtn');
+}
+
+async function runAILeads(){
+  var total=scoredLeads.length;
+  var high=scoredLeads.filter(function(l){return l._quality==='high'});
+  var mid=scoredLeads.filter(function(l){return l._quality==='mid'});
+  var low=scoredLeads.filter(function(l){return l._quality==='low'});
+  var platMap={};scoredLeads.forEach(function(l){var p=(l['platform']||'altro').toUpperCase();platMap[p]=(platMap[p]||0)+1});
+  var hourMap=new Array(24).fill(0);scoredLeads.forEach(function(l){var m=(l['created_time']||'').match(/T(\d{2}):/);if(m)hourMap[parseInt(m[1])]++});
+  var peakHour=hourMap.indexOf(Math.max.apply(null,hourMap));
+  var budgets=scoredLeads.map(function(l){return l['budget']||''}).filter(Boolean).join(', ');
+  var teams=scoredLeads.map(function(l){return l['quanto_\u00e8_grande_il_tuo_team']||l['quanto_e_grande_il_tuo_team']||''}).filter(Boolean).join(', ');
+  var cityMap={};scoredLeads.forEach(function(l){Object.keys(l).forEach(function(k){if(k.toLowerCase().includes('citt')){var c=(l[k]||'').trim();if(c)cityMap[c]=(cityMap[c]||0)+1}})});
+  var topCitta=Object.entries(cityMap).sort(function(a,b){return b[1]-a[1]}).slice(0,5).map(function(e){return e[0]+' ('+e[1]+')'}).join(', ');
+  var highEx=high.slice(0,3).map(function(l){return((l['nome']||'')+' '+(l['cognome']||'')).trim()+' - budget: '+(l['budget']||'?')+', team: '+(l['quanto_\u00e8_grande_il_tuo_team']||l['quanto_e_grande_il_tuo_team']||'?')}).join('\n');
+  await callAI(
+    'Analisi qualit\u00e0 lead campagna Meta:\n\nTOTALE: '+total+'\nALTO: '+high.length+' ('+Math.round(high.length/(total||1)*100)+'%)\nMEDIO: '+mid.length+' ('+Math.round(mid.length/(total||1)*100)+'%)\nBASSO: '+low.length+' ('+Math.round(low.length/(total||1)*100)+'%)\n\nPIATTAFORME: '+Object.entries(platMap).map(function(e){return e[0]+': '+e[1]}).join(', ')+'\nORA DI PUNTA: '+peakHour+':00\nCITT\u00c0: '+topCitta+'\n\nBUDGET DICHIARATI: '+budgets+'\nDIMENSIONE TEAM: '+teams+'\n\nLEAD ALTO VALORE:\n'+(highEx||'nessuno'),
+    'Sei un esperto di qualificazione lead per il settore immobiliare/property management. Analizza i dati e rispondi in italiano con questa struttura:\n\nPROFILO DEL LEAD TIPO\n(chi arriva mediamente, con dati su budget e team)\n\nQUALIT\u00c0 E CONVERSIONE\n(valutazione della qualit\u00e0 generale e cosa indica ogni fascia)\n\n3 AZIONI PER MIGLIORARE LA QUALIT\u00c0 DEI LEAD\n1. ...\n2. ...\n3. ...\n\nDiretto, pratico, numeri reali. Niente asterischi o hashtag. Intestazioni in maiuscolo.',
+    'aiLeadsContent','regenLeadsBtn');
+}
+
+// fix showTab
+function showTab(section,name,el){
+  var secId='section'+(section==='ads'?'Ads':'Leads');
+  var sec=document.getElementById(secId);
+  sec.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active')});
+  sec.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+  var prefix=section==='ads'?'ads':'leads';
+  document.getElementById(prefix+'-'+name).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
