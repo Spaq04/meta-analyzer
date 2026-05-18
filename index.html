@@ -530,7 +530,7 @@ async function callAI(userPrompt,systemPrompt,contentId,regenId){
   document.getElementById(contentId).innerHTML='<div style="color:#6B6B6B;font-size:14px;padding:.5rem 0"><span class="spinner"></span>Analisi in corso...</div>';
   document.getElementById(regenId).style.display='none';
   try{
-    var res=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
+    var res=await fetch('/.netlify/functions/ai',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:systemPrompt,messages:[{role:'user',content:userPrompt}]})});
     var data=await res.json();
     var text=data.content&&data.content.find(function(c){return c.type==='text'});
